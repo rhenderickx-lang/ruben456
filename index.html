@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Electra Note Taker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;padding:1rem;max-width:700px;margin:0 auto}
+h1{font-size:20px;font-weight:700;margin:1rem 0 .25rem}
+.sub{font-size:13px;color:#888;margin-bottom:1.25rem}
+.btn{width:100%;padding:16px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;border:none;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-appearance:none;touch-action:manipulation}
+.btn-record{background:#F5C400;color:#1a1a1a}
+.btn-stop{background:#e74c3c;color:#fff}
+.btn-save{background:#27ae60;color:#fff}
+.btn-export{background:#3b82f6;color:#fff}
+.btn-new{background:#fff;color:#1a1a1a;border:2px solid #e5e5e0}
+.card{background:#fff;border-radius:14px;padding:1.25rem;margin-bottom:12px;border:1px solid #e5e5e0}
+.label{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.transcript{font-size:15px;color:#333;line-height:1.7;min-height:80px;white-space:pre-wrap}
+.interim{color:#aaa;font-style:italic;font-size:14px;margin-top:4px}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:#e74c3c;animation:pulse 1s infinite;display:inline-block;margin-right:6px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.timer{font-size:48px;font-weight:800;color:#1a1a1a;letter-spacing:.05em;text-align:center;margin:8px 0 12px}
+.progress{height:6px;background:#f0f0ea;border-radius:3px;margin-bottom:12px}
+.pfill{height:6px;background:#22c55e;border-radius:3px;transition:width .3s}
+.next-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;font-size:14px;color:#1e40af;margin-bottom:12px}
+.next-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#3b82f6;margin-bottom:3px}
+.q-sec{font-size:10px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:.06em;padding:10px 0 3px}
+.q-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f0;cursor:pointer;min-height:36px}
+.q-item:last-child{border-bottom:none}
+.q-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;border:2px solid #ddd;background:#fff;transition:all .2s}
+.q-dot.done{background:#22c55e;border-color:#22c55e}
+.q-dot.next{background:#F5C400;border-color:#F5C400}
+.q-text{color:#999;font-size:13px;line-height:1.4;transition:all .2s}
+.q-text.done{color:#ccc;text-decoration:line-through}
+.q-text.next{color:#1a1a1a;font-weight:700}
+.iv-row{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.iv-title{font-size:14px;font-weight:600}
+.iv-sub{font-size:12px;color:#888;margin-top:3px;line-height:1.4}
+textarea{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:10px;font-size:15px;min-height:70px;font-family:inherit;resize:vertical;-webkit-appearance:none}
+textarea:focus{outline:none;border-color:#F5C400}
+.badge{display:inline-block;background:#F5C400;color:#1a1a1a;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px}
+.qcount{font-size:13px;font-weight:700;color:#22c55e;float:right}
+.mic-note{background:#fffbe6;border:1px solid #ffe58f;border-radius:10px;padding:10px 12px;font-size:13px;color:#7d5f00;margin-bottom:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>⚡ Electra Note Taker</h1>
+<p class="sub">Spreek gewoon — alles wordt opgeslagen</p>
+<div id="mic-note" class="mic-note" style="display:none">
+  📱 Op gsm: Chrome vraagt toestemming voor de microfoon wanneer je op "Start opname" drukt. Klik op <strong>"Toestaan"</strong>.
+</div>
+<div class="card">
+  <div class="timer" id="timer">00:00</div>
+  <div id="rec-status" style="text-align:center;font-size:14px;color:#888;margin-bottom:12px">Klaar om op te nemen</div>
+  <button class="btn btn-record" id="btn-rec" onclick="startRec()">🎙 Start opname</button>
+  <button class="btn btn-stop" id="btn-stop" onclick="stopRec()" style="display:none">⏹ Stop opname</button>
+</div>
+<div class="card" id="tc" style="display:none">
+  <div class="label">Live transcript</div>
+  <div class="transcript" id="tt"></div>
+  <div class="interim" id="it"></div>
+</div>
+<div id="save-sec" style="display:none">
+  <div class="card">
+    <div class="label">Notities (optioneel)</div>
+    <textarea id="notes" placeholder="Extra opmerkingen..."></textarea>
+  </div>
+  <button class="btn btn-save" onclick="saveIv()">💾 Opslaan</button>
+  <button class="btn btn-new" onclick="newIv()">+ Nieuw interview</button>
+</div>
+<div class="card" style="margin-top:4px">
+  <div class="label">Vragen <span class="qcount" id="qcount">0/26</span></div>
+  <div class="progress"><div class="pfill" id="pfill" style="width:0%"></div></div>
+  <div id="nbox" class="next-box"><div class="next-lbl">Begin met</div><div id="ntext">Hoe lang rijdt u al elektrisch?</div></div>
+  <div id="qlist"></div>
+</div>
+<div id="ivlist" style="margin-top:4px"></div>
+<div id="export-sec" style="display:none;margin-top:4px">
+  <button class="btn btn-export" onclick="exportCSV()">📥 Download CSV voor AI analyse</button>
+  <div style="font-size:12px;color:#888;text-align:center;margin-top:4px;margin-bottom:1rem">Stuur dit bestand naar Claude voor grafieken &amp; conclusies</div>
+</div>
+<script>
+if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){document.getElementById('mic-note').style.display='block';}
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var rec=null,recording=false,finalText='',secs=0,timerInt=null;
+var doneQs={},interviews=JSON.parse(localStorage.getItem('ei_ivs')||'[]');
+var QS=[
+  {id:'ev_duration',s:'Profiel',q:'Hoe lang rijdt u al elektrisch?',k:['jaar elektrisch','maand elektrisch','twee jaar','drie jaar','vier jaar','vijf jaar','pas gekocht','recent elektrisch','elektrisch rij']},
+  {id:'car_type',s:'Profiel',q:'Bedrijfswagen of privéwagen?',k:['bedrijfswagen','privéwagen','privewagen','van de zaak','eigen wagen','firmawagen']},
+  {id:'first_time',s:'Profiel',q:'Eerste keer bij Electra?',k:['eerste keer hier','nooit eerder hier','tweede keer','paar keer hier','regelmatig hier','altijd hier','vaste klant']},
+  {id:'discovery',s:'Profiel',q:'Hoe Electra ontdekt?',k:['via google','chargemap','via via','aanbevolen','onderweg gezien','reclame','collega verteld']},
+  {id:'trip_purpose',s:'Bezoek',q:'Doel van de rit vandaag?',k:['winkelen','boodschappen','voor werk','lange rit','vakantie','spontaan gestopt','gepland laden']},
+  {id:'planned_visit',s:'Bezoek',q:'Station gepland of toevallig?',k:['gepland station','op voorhand','toevallig gevonden','niet gepland','app gevonden onderweg']},
+  {id:'station_choice',s:'Bezoek',q:'Waarom dit station?',k:['dichtbij hier','op mijn route','faciliteiten hier','parkeren hier','restaurant nabij','enige optie','aanbevolen station']},
+  {id:'session_start',s:'Laadsessie',q:'Hoe sessie gestart?',k:['bankkaart gebruikt','tap betaald','contactloos betaald','autocharge gebruikt','automatisch gestart','badge gebruikt','rfid gebruikt','app gestart','abonnement gestart']},
+  {id:'speed_satisfaction',s:'Laadsessie',q:'Tevreden met laadsnelheid?',k:['snelheid goed','snel geladen','traag laden','tevreden snelheid','te lang gewacht','laadvermogen']},
+  {id:'session_issue',s:'Laadsessie',q:'Probleem tijdens sessie?',k:['probleem gehad','betaling mislukt','scherm reageert niet','slagboom probleem','alles vlot gegaan','geen probleem gehad']},
+  {id:'roaming_tool',s:'Ecosysteem',q:'Wat bij niet-Electra station?',k:['ionity gebruik','fastned gebruik','badge elders','chargemap gebruik','bankkaart elders','enkel bij electra']},
+  {id:'single_badge',s:'Ecosysteem',q:'Interesse universele badge?',k:['universele badge','één badge voor','wist niet badge electra','ja wil badge','nee geen badge']},
+  {id:'pricing_discovery',s:'Prijzen',q:'Hoe prijs ontdekken?',k:['prijs geweten','factuur verrassing','prijs op scherm','app check prijs','weet niet prijs']},
+  {id:'charging_habits',s:'Navigatie',q:'Laadgewoonten?',k:['thuis opladen','op werk laden','publiek laden','mix van laden','wallbox thuis']},
+  {id:'station_finder',s:'Navigatie',q:'Hoe stations vinden?',k:['google maps zoek','gps wagen','chargemap zoeken','electra app zoeken','altijd zelfde station']},
+  {id:'app_usage',s:'App',q:'Gebruikt u de Electra-app?',k:['electra app gebruik','app regelmatig gebruik','soms app gebruik','andere app gebruik','kende electra app niet']},
+  {id:'autocharge_aware',s:'App',q:'Kent u Autocharge?',k:['autocharge kennen','automatisch opladen','inpluggen vanzelf','nooit gehoord autocharge','autocharge gebruiken']},
+  {id:'electra_plus',s:'App',q:'Bent u Electra+ abonnee?',k:['electra plus hebben','abonnement electra','geabonneerd electra','pay as you go','per keer betalen','kende electra plus niet']},
+  {id:'boost_awareness',s:'App',q:'Kent u Electra+ Boost?',k:['boost kennen','11000 laders','9.99 per maand','9,99 maand','boost niet gekend','boost interessant']},
+  {id:'stress_point',s:'Pijnpunten',q:'Wat is het meest stressvol?',k:['stress vol station','sessie start niet','prijs verrassing stress','overtijd stress','app werkt niet stress','meerdere apps stress','geen stress laden']},
+  {id:'wishlist_feature',s:'Pijnpunten',q:'Gewenste feature?',k:['wachttijd zien','prijs vergelijken feature','signalisatie verbeteren','offline modus','carplay integratie','android auto integratie','loyaliteit punten']},
+  {id:'magic_wand',s:'Pijnpunten',q:'Toverstaf: wat veranderen?',k:['toverstaf','ideaal scenario','zou veranderen','droomscenario']},
+  {id:'charge_more',s:'Pijnpunten',q:'Wat maakt u vaker laden?',k:['goedkoper laden','meer stations buurt','beter abonnement','sneller betrouwbaarder','betere app','al tevreden gebruiker']},
+  {id:'frustration',s:'Globaal',q:'Frustrerende momenten vandaag?',k:['frustratie vandaag','probleem vandaag bezoek','alles vlot vandaag','niets mis vandaag']},
+  {id:'overall_rating',s:'Globaal',q:'Globale score? (1-5)',k:['score geven','geef een cijfer','van de vijf','beoordeling totaal']},
+  {id:'comments',s:'Globaal',q:'Andere opmerkingen?',k:['opmerking hebben','suggestie geven','verder nog iets','ten slotte nog iets']},
+];
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function checkQs(text){var t=text.toLowerCase();var changed=false;QS.forEach(function(q){if(!doneQs[q.id]&&q.k.some(function(k){return t.indexOf(k)>=0;})){doneQs[q.id]=true;changed=true;}});if(changed)renderQs();}
+function renderQs(){var secs=[...new Set(QS.map(function(q){return q.s;}))];var done=Object.values(doneQs).filter(Boolean).length;var pct=Math.round((done/QS.length)*100);document.getElementById('qcount').textContent=done+'/'+QS.length;document.getElementById('pfill').style.width=pct+'%';var nextQ=QS.find(function(q){return !doneQs[q.id];});var nb=document.getElementById('nbox');if(nextQ){nb.style.display='block';document.getElementById('ntext').textContent=nextQ.q;}else{nb.innerHTML='<div style="color:#166534;font-weight:700;font-size:14px">Alle vragen beantwoord!</div>';}var html='';secs.forEach(function(sec){html+='<div class="q-sec">'+sec+'</div>';QS.filter(function(q){return q.s===sec;}).forEach(function(q){var d=doneQs[q.id];var n=nextQ&&q.id===nextQ.id;html+='<div class="q-item" onclick="toggleQ(\''+q.id+'\')">';html+='<div class="q-dot'+(d?' done':n?' next':'')+'" ></div>';html+='<div class="q-text'+(d?' done':n?' next':'')+'">'+q.q+'</div></div>';});});document.getElementById('qlist').innerHTML=html;}
+function toggleQ(id){doneQs[id]=!doneQs[id];renderQs();}
+function startRec(){if(!SR)return alert('Gebruik Google Chrome voor spraakherkenning');finalText='';secs=0;doneQs={};document.getElementById('timer').textContent='00:00';document.getElementById('tc').style.display='block';document.getElementById('tt').textContent='';document.getElementById('it').textContent='';document.getElementById('save-sec').style.display='none';document.getElementById('btn-rec').style.display='none';document.getElementById('btn-stop').style.display='flex';document.getElementById('rec-status').innerHTML='<span class="rec-dot"></span>Aan het opnemen...';renderQs();rec=new SR();rec.lang='nl-BE';rec.continuous=true;rec.interimResults=true;rec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalText+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}document.getElementById('tt').textContent=finalText;document.getElementById('it').textContent=interim;checkQs(finalText);};rec.onerror=function(e){if(e.error==='not-allowed'){alert('Microfoon toegang geweigerd.\n\nOp iPhone: Instellingen > Chrome > Microfoon > Aan\nOp Android: tik op het slotje in de adresbalk > Microfoon > Toestaan');}};rec.onend=function(){if(recording)rec.start();};rec.start();recording=true;timerInt=setInterval(function(){secs++;document.getElementById('timer').textContent=fmt(secs);},1000);}
+function stopRec(){if(rec){rec.onend=null;rec.stop();}clearInterval(timerInt);recording=false;document.getElementById('btn-stop').style.display='none';document.getElementById('btn-rec').style.display='flex';document.getElementById('rec-status').textContent='Duur: '+fmt(secs);document.getElementById('it').textContent='';if(finalText.trim())document.getElementById('save-sec').style.display='block';}
+function saveIv(){var iv={nr:interviews.length+1,tijd:new Date().toLocaleString('nl-BE'),duur:fmt(secs),transcript:finalText.trim(),notities:document.getElementById('notes').value.trim()};interviews.push(iv);localStorage.setItem('ei_ivs',JSON.stringify(interviews));renderIvList();document.getElementById('save-sec').style.display='none';document.getElementById('notes').value='';document.getElementById('export-sec').style.display='block';alert('Opgeslagen! ('+interviews.length+' interviews)');}
+function newIv(){finalText='';secs=0;doneQs={};document.getElementById('timer').textContent='00:00';document.getElementById('tc').style.display='none';document.getElementById('save-sec').style.display='none';document.getElementById('rec-status').textContent='Klaar om op te nemen';document.getElementById('notes').value='';renderQs();window.scrollTo(0,0);}
+function renderIvList(){var list=document.getElementById('ivlist');if(!interviews.length){list.innerHTML='';return;}list.innerHTML='<div class="card"><div class="label">Opgeslagen <span class="badge">'+interviews.length+'</span></div>'+interviews.slice().reverse().map(function(iv){return'<div class="iv-row"><div class="iv-title">Interview '+iv.nr+' &middot; '+iv.tijd+'</div><div class="iv-sub">'+iv.duur+' &middot; '+iv.transcript.split(' ').slice(0,10).join(' ')+'...</div></div>';}).join('')+'</div>';document.getElementById('export-sec').style.display='block';}
+function exportCSV(){var rows=[['Interview','Tijdstip','Duur','Transcript','Notities']];interviews.forEach(function(iv){rows.push([iv.nr,iv.tijd,iv.duur,'"'+iv.transcript.replace(/"/g,'""')+'"','"'+(iv.notities||'').replace(/"/g,'""')+'"']);});var csv=rows.map(function(r){return r.join(',');}).join('\n');var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='electra_interviews_'+new Date().toLocaleDateString('nl-BE').replace(/\//g,'-')+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
+renderQs();renderIvList();
+</script>
+</body>
+</html>
