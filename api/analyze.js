@@ -13,28 +13,26 @@ export default async function handler(req) {
 
   const { transcript, questions } = await req.json();
 
-  const prompt = `Analyseer dit interview-transcript van een Electra EV-laadstation klant in Belgie.
-Let op: mensen antwoorden informeel. "Ik betaal per keer" = pay-as-you-go. "Van de zaak" = bedrijfswagen. Wees royaal in herkenning.
+  const prompt = `Je analyseert een interview-transcript van een klant aan een Electra EV-laadstation in Belgie. Mensen praten informeel en onnauwkeurig. Wees royaal in interpretatie.
 
 Transcript:
 """
 ${transcript}
 """
 
-Vragen:
+Vragen en opties:
 ${questions}
 
-Geef ALLEEN een JSON-object. Per question ID: exacte optietekst of korte samenvatting voor open vragen. null als niet vermeld.`;
+Geef ALLEEN een JSON-object terug. Per question ID: kies de best passende optie op basis van context, of geef een korte samenvatting voor open vragen. Gebruik null als iets echt niet vermeld werd. Geen uitleg, enkel JSON.`;
 
-  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://electra-interview.vercel.app',
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      model: 'llama-3.3-70b-versatile',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     }),
